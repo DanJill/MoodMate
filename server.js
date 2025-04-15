@@ -13,35 +13,34 @@ app.get("/", (req, res) => {
 
 // ✅ Mood detection route
 app.post("/detect-mood", async (req, res) => {
-  const userInput = req.body.message;
+  const { message } = req.body;
 
-  try {
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a mood-detection assistant. Detect the user's mood from their message and offer a helpful quote, affirmation, or suggestion."
-          },
-          {
-            role: "user",
-            content: userInput
-          }
-        ]
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+  const response = await axios.post(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a mood-detection assistant. Detect the user's mood from their message and offer a helpful quote, affirmation, or suggestion."
+        },
+        {
+          role: "user",
+          content: message
         }
+      ]
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openaiApiKey}`
       }
-    );
+    }
+  );
 
-    const moodMessage = response.data.choices[0].message.content;
-    res.json({ reply: moodMessage });
+  res.json({ message: response.data.choices[0].message.content });
+});
+
 
   } catch (error) {
     console.error("Error calling OpenAI:", error.message);
