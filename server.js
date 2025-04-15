@@ -1,22 +1,19 @@
-// ai-moodmate-backend/server.js
-
 const express = require("express");
-const cors = require("cors");
 const axios = require("axios");
-require('dotenv').config();
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(cors());
 app.use(express.json());
-app.get('/', (req, res) => {
-  res.send('AI MoodMate Backend is Running!');
+
+app.get("/", (req, res) => {
+  res.send("AI MoodMate Backend is Running!");
 });
 
-
-app.post("/analyze", async (req, res) => {
-  const userInput = req.body.input;
+// ✅ Mood detection route
+app.post("/detect-mood", async (req, res) => {
+  const userInput = req.body.message;
 
   try {
     const response = await axios.post(
@@ -43,13 +40,16 @@ app.post("/analyze", async (req, res) => {
       }
     );
 
-    res.json({ result: response.data.choices[0].message.content });
+    const moodMessage = response.data.choices[0].message.content;
+    res.json({ reply: moodMessage });
+
   } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ error: "Failed to analyze mood" });
+    console.error("Error calling OpenAI:", error.message);
+    res.status(500).json({ error: "Failed to detect mood" });
   }
 });
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`AI MoodMate backend running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
