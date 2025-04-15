@@ -41,12 +41,12 @@ app.post("/detect-mood", async (req, res) => {
   res.json({ message: response.data.choices[0].message.content });
 });
 
-
-  } catch (error) {
-    console.error("Error calling OpenAI:", error.message);
-    res.status(500).json({ error: "Failed to detect mood" });
-  }
-});
+try {
+  // code that might throw an error
+} catch (error) {
+  console.error("Error calling OpenAI:", error.message);
+  res.status(500).json({ error: "Failed to detect mood" });
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
