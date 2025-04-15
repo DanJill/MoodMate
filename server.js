@@ -13,7 +13,7 @@ app.get("/", (req, res) => {
 
 // ✅ Mood detection route
 app.post("/detect-mood", async (req, res) => {
-  const { message } = req.body;
+  const userInput = req.body.message; 
 
   const response = await axios.post(
     "https://api.openai.com/v1/chat/completions",
