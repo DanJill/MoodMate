@@ -2,6 +2,9 @@ const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
 require("dotenv").config();
+console.log("Received request with input:", userInput);
+// and
+console.log("OpenAI response:", response.data);
 
 const app = express();
 app.use(cors());
@@ -44,8 +47,10 @@ app.post("/detect-mood", async (req, res) => {
 try {
   // code that might throw an error
 } catch (error) {
-  console.error("Error calling OpenAI:", error.message);
-  res.status(500).json({ error: "Failed to detect mood" });
+  console.error("Error:", error);
+  document.getElementById("response").innerText = 
+    "Error analyzing mood. Please try again later.";
+}
 }
 
 const PORT = process.env.PORT || 3000;
