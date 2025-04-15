@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const axios = require("axios");
-require("dotenv").config();  // Fixed the dotenv import
+const path = require("path");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,9 +10,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the root directory
+app.use(express.static(path.join(__dirname)));
+
 app.post("/detect-mood", async (req, res) => {
-  const userInput = req.body.message;  // Changed from req. body.input
-  
+  const { message } = req.body;
+
   try {
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
@@ -24,7 +28,7 @@ app.post("/detect-mood", async (req, res) => {
           },
           {
             role: "user",
-            content: userInput
+            content: message
           }
         ]
       },
@@ -36,12 +40,16 @@ app.post("/detect-mood", async (req, res) => {
       }
     );
 
-    res.json({ message: response.data.choices[0].message.content }); // Changed from 'result' to 'message'
+    res.json({ message: response.data.choices[0].message.content });
   } catch (error) {
-    console.error("Full error:", error);
-    console.error("Error details:", error.response?.data || error.message);
+    console.error(error.response?.data || error.message);
     res.status(500).json({ error: "Failed to analyze mood" });
   }
+});
+
+// Fallback route to serve index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.listen(PORT, () => {
