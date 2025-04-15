@@ -13,12 +13,15 @@
       flex-direction: column;
       align-items: center;
       justify-content: start;
-      height: 100vh;
+      min-height: 100vh;
       background-color: #f0f8ff;
       transition: background-color 0.3s;
     }
     h1 {
       margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     textarea {
       width: 90%;
@@ -27,6 +30,8 @@
       margin: 1rem 0;
       padding: 0.5rem;
       font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
     }
     button {
       padding: 0.7rem 1.5rem;
@@ -42,6 +47,10 @@
     button:hover {
       background-color: #0056b3;
     }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
     #response, #history {
       width: 90%;
       max-width: 500px;
@@ -50,6 +59,10 @@
       background: #ffffff;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .error {
+      color: #d9534f;
+      font-weight: bold;
     }
     @media (max-width: 600px) {
       textarea, button, #response, #history {
@@ -61,8 +74,8 @@
 <body>
   <h1>🧠 AI MoodMate</h1>
   <textarea id="userInput" placeholder="Type how you feel..."></textarea><br>
-  <button onclick="analyzeMood()">Detect Mood</button>
-  <button onclick="startVoiceInput()">🎤 Speak</button>
+  <button id="detectBtn" onclick="analyzeMood()">Detect Mood</button>
+  <button id="speakBtn" onclick="startVoiceInput()">🎤 Speak</button>
   <div id="response"></div>
   <div id="history"><h3>Mood Journal</h3><ul id="historyList"></ul></div>
 
@@ -83,17 +96,43 @@
       
       const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = 'en-US';
+      document.getElementById("speakBtn").disabled = true;
+      document.getElementById("speakBtn").textContent = "Listening...";
+      
       recognition.start();
+      
       recognition.onresult = function(event) {
         document.getElementById("userInput").value = event.results[0][0].transcript;
+        document.getElementById("speakBtn").disabled = false;
+        document.getElementById("speakBtn").textContent = "🎤 Speak";
+      };
+      
+      recognition.onerror = function() {
+        document.getElementById("speakBtn").disabled = false;
+        document.getElementById("speakBtn").textContent = "🎤 Speak";
+        alert("Speech recognition error");
+      };
+      
+      recognition.onend = function() {
+        document.getElementById("speakBtn").disabled = false;
+        document.getElementById("speakBtn").textContent = "🎤 Speak";
       };
     }
 
     async function analyzeMood() {
       const input = document.getElementById("userInput").value;
-      if (!input) return;
+      if (!input) {
+        alert("Please enter how you're feeling first.");
+        return;
+      }
 
+      // Disable button during processing
+      const detectBtn = document.getElementById("detectBtn");
+      detectBtn.disabled = true;
+      detectBtn.textContent = "Processing...";
+      
       document.getElementById("response").innerText = "Analyzing...";
+      document.getElementById("response").classList.remove("error");
 
       try {
         // Use relative URL instead of absolute URL
@@ -106,24 +145,44 @@
         });
 
         const data = await response.json();
+        
+        // Re-enable button
+        detectBtn.disabled = false;
+        detectBtn.textContent = "Detect Mood";
+        
+        if (data.error) {
+          document.getElementById("response").innerText = data.message || "Error analyzing mood.";
+          document.getElementById("response").classList.add("error");
+          console.error(data.error);
+          return;
+        }
+        
         const message = data.message || "Couldn't detect mood.";
         document.getElementById("response").innerText = message;
 
         const list = document.getElementById("historyList");
         const listItem = document.createElement("li");
-        listItem.textContent = `${new Date().toLocaleString()}: ${input} ➜ ${message}`;
-        list.appendChild(listItem);
+        listItem.textContent = `${new Date().toLocaleString()}: ${input} → ${message}`;
+        list.prepend(listItem); // Add to top of list
         localStorage.setItem("moodHistory", list.innerHTML);
 
-        if (message.toLowerCase().includes("happy")) {
+        // Change background color based on mood
+        if (message.toLowerCase().includes("happy") || message.toLowerCase().includes("joy")) {
           document.body.style.backgroundColor = "#e0ffe0";
-        } else if (message.toLowerCase().includes("sad")) {
+        } else if (message.toLowerCase().includes("sad") || message.toLowerCase().includes("depress")) {
           document.body.style.backgroundColor = "#ffe0e0";
+        } else if (message.toLowerCase().includes("anger") || message.toLowerCase().includes("angry") || message.toLowerCase().includes("frustrat")) {
+          document.body.style.backgroundColor = "#ffebcc";
         } else {
           document.body.style.backgroundColor = "#f0f8ff";
         }
       } catch (error) {
-        document.getElementById("response").innerText = "Error analyzing mood.";
+        // Re-enable button
+        detectBtn.disabled = false;
+        detectBtn.textContent = "Detect Mood";
+        
+        document.getElementById("response").innerText = "Error connecting to the server. Please try again later.";
+        document.getElementById("response").classList.add("error");
         console.error(error);
       }
     }
