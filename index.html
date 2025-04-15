@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI MoodMate</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      height: 100vh;
+      background-color: #f0f8ff;
+      transition: background-color 0.3s;
+    }
+    h1 {
+      margin-top: 1rem;
+    }
+    textarea {
+      width: 90%;
+      max-width: 500px;
+      height: 100px;
+      margin: 1rem 0;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    button {
+      padding: 0.7rem 1.5rem;
+      margin: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #response, #history {
+      width: 90%;
+      max-width: 500px;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    @media (max-width: 600px) {
+      textarea, button, #response, #history {
+        width: 95%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 AI MoodMate</h1>
+  <textarea id="userInput" placeholder="Type how you feel..."></textarea><br>
+  <button onclick="analyzeMood()">Detect Mood</button>
+  <button onclick="startVoiceInput()">🎤 Speak</button>
+  <div id="response"></div>
+  <div id="history"><h3>Mood Journal</h3><ul id="historyList"></ul></div>
+
+  <script>
+    // Load history from localStorage when page loads
+    window.onload = function() {
+      const savedHistory = localStorage.getItem("moodHistory");
+      if (savedHistory) {
+        document.getElementById("historyList").innerHTML = savedHistory;
+      }
+    };
+    
+    function startVoiceInput() {
+      if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+        alert("Speech recognition is not supported in your browser.");
+        return;
+      }
+      
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.start();
+      recognition.onresult = function(event) {
+        document.getElementById("userInput").value = event.results[0][0].transcript;
+      };
+    }
+
+    async function analyzeMood() {
+      const input = document.getElementById("userInput").value;
+      if (!input) return;
+
+      document.getElementById("response").innerText = "Analyzing...";
+
+      try {
+        // Use relative URL instead of absolute URL
+        const response = await fetch("/detect-mood", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: input }),
+        });
+
+        const data = await response.json();
+        const message = data.message || "Couldn't detect mood.";
+        document.getElementById("response").innerText = message;
+
+        const list = document.getElementById("historyList");
+        const listItem = document.createElement("li");
+        listItem.textContent = `${new Date().toLocaleString()}: ${input} ➜ ${message}`;
+        list.appendChild(listItem);
+        localStorage.setItem("moodHistory", list.innerHTML);
+
+        if (message.toLowerCase().includes("happy")) {
+          document.body.style.backgroundColor = "#e0ffe0";
+        } else if (message.toLowerCase().includes("sad")) {
+          document.body.style.backgroundColor = "#ffe0e0";
+        } else {
+          document.body.style.backgroundColor = "#f0f8ff";
+        }
+      } catch (error) {
+        document.getElementById("response").innerText = "Error analyzing mood.";
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
