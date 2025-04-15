@@ -51,7 +51,6 @@ try {
   document.getElementById("response").innerText = 
     "Error analyzing mood. Please try again later.";
 }
-}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
